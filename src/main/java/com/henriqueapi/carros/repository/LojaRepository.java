@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface LojaRepository extends JpaRepository<Lojas, Long> {
     Optional<Lojas> findByCnpj(String cnpj);
     List<Lojas> findByCidadeAndEstado(String cidade, String estado);
+    List<Lojas> findByEstado(String estado);
 }

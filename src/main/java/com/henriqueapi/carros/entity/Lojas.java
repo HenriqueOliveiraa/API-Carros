@@ -1,6 +1,5 @@
 package com.henriqueapi.carros.entity;
 
-import com.fasterxml.jackson.annotation.JsonEnumDefaultValue;
 import jakarta.persistence.*;
 import lombok.Data;
 
