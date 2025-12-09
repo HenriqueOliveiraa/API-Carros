@@ -2,7 +2,7 @@ package com.henriqueapi.carros.services;
 
 import com.henriqueapi.carros.dtos.CarroRequestDTO;
 import com.henriqueapi.carros.dtos.CarroResponseDTO;
-import com.henriqueapi.carros.entity.Carro;
+import com.henriqueapi.carros.entity.Carros;
 import com.henriqueapi.carros.repository.CarroRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,20 +19,18 @@ public class CarroService {
 
     public CarroResponseDTO create(CarroRequestDTO dto) {
 
-        Carro carro = new Carro();
-
+        Carros carro = new Carros();
         carro.setNome(dto.getNome());
         carro.setCor(dto.getCor());
         carro.setMarca(dto.getMarca());
         carro.setAno(dto.getAno());
 
-        Carro saved = repository.save(carro);
+        Carros saved = repository.save(carro);
         return mapToResponseDTO(saved);
-
     }
 
     public CarroResponseDTO update(Long id, CarroRequestDTO dto) {
-        Carro carro = repository.findById(id)
+        Carros carro = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Carro com ID " + id + " não encontrado"));
 
         carro.setNome(dto.getNome());
@@ -40,7 +38,7 @@ public class CarroService {
         carro.setMarca(dto.getMarca());
         carro.setAno(dto.getAno());
 
-        Carro atualizado = repository.save(carro);
+        Carros atualizado = repository.save(carro);
         return mapToResponseDTO(atualizado);
     }
 
@@ -50,7 +48,7 @@ public class CarroService {
     }
 
     public CarroResponseDTO findById(Long id){
-        Carro carro = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Carro com ID " + id + " não encontrado"));
+        Carros carro = repository.findById(id).orElseThrow(() -> new EntityNotFoundException("Carro com ID " + id + " não encontrado"));
         return mapToResponseDTO(carro);
     }
 
@@ -61,7 +59,7 @@ public class CarroService {
         repository.deleteById(id);
     }
 
-    private CarroResponseDTO mapToResponseDTO(Carro carro){
+    private CarroResponseDTO mapToResponseDTO(Carros carro){
         CarroResponseDTO dto = new CarroResponseDTO();
         dto.setId(carro.getId());
         dto.setNome(carro.getNome());
@@ -71,4 +69,3 @@ public class CarroService {
         return dto;
     }
 }
-
