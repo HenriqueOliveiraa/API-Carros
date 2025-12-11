@@ -150,22 +150,6 @@ public class UsuarioService {
     }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     private UsuarioResponseDTO mapToResponseDTO(Usuarios usuario) {
         UsuarioResponseDTO dto = new UsuarioResponseDTO();
         dto.setId(usuario.getId());
