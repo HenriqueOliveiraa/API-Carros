@@ -80,15 +80,28 @@ const Login = () => {
   const [showModalErro, setShowModalErro] = useState(false);
 
   const handleSubmit = () => {
+    // Previne múltiplos cliques
+    if (isLoading) return;
+
     setIsLoading(true);
+
+    // Simula validação
     setTimeout(() => {
       setIsLoading(false);
 
       // Validação de credenciais
-      if (email === 'user@gmail.com' && password === '123') {
-        alert('Login realizado com sucesso!');
-        // router.push('/dashboard');
+      if (email.trim() === 'user@gmail.com' && password === '123') {
+        console.log('Login bem-sucedido! Redirecionando...');
+        // Tenta redirecionar para a página inicial
+        try {
+          router.push('/inicial');
+        } catch (error) {
+          console.error('Erro ao redirecionar:', error);
+          // Se falhar, tenta a rota alternativa
+          router.push('/master/inicial');
+        }
       } else {
+        console.log('Credenciais inválidas');
         // Mostra o modal de erro
         setShowModalErro(true);
       }
@@ -109,6 +122,13 @@ const Login = () => {
 
   const handleBackToHome = () => {
     router.push('/');
+  };
+
+  // Função para submeter com Enter
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleSubmit();
+    }
   };
 
   return (
@@ -146,7 +166,8 @@ const Login = () => {
                     type="email"
                     value={email}
                     onChange={e => setEmail(e.target.value)}
-                    placeholder="Digite seu e-mail "
+                    onKeyPress={handleKeyPress}
+                    placeholder="Digite seu e-mail"
                   />
                 </InputWrapper>
               </FormGroup>
@@ -158,6 +179,7 @@ const Login = () => {
                     type={showPassword ? 'text' : 'password'}
                     value={password}
                     onChange={e => setPassword(e.target.value)}
+                    onKeyPress={handleKeyPress}
                     placeholder="Digite sua senha"
                   />
                   <ToggleButton

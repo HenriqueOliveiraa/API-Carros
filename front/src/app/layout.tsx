@@ -89,6 +89,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
     '/cadastro',
     '/cadastro/etapa2',
     '/modals',
+    '/inicial',
+    '/navbarlogin',
+    '/navbarlogin/navbaradmin',
   ];
   const shouldHideNavbar = hideNavbarRoutes.includes(pathname);
 
