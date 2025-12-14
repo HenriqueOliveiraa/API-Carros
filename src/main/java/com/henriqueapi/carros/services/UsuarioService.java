@@ -1,6 +1,7 @@
 package com.henriqueapi.carros.services;
 
 import com.henriqueapi.carros.dtos.Request.AlterarSenhaDTO;
+import com.henriqueapi.carros.dtos.Request.RegistroRequestDTO;
 import com.henriqueapi.carros.dtos.Request.UsuarioRequestDTO;
 import com.henriqueapi.carros.dtos.Response.UsuarioResponseDTO;
 import com.henriqueapi.carros.entity.Lojas;
@@ -12,11 +13,13 @@ import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Service
 public class UsuarioService {
 
     @Autowired
@@ -27,6 +30,31 @@ public class UsuarioService {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+
+    @Transactional
+    public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
+
+        if (repository.existsByEmail(dto.getEmail())) {
+            throw new IllegalArgumentException("Email já cadastrado");
+        }
+        if (repository.existsByCpf(dto.getCpf())) {
+            throw new IllegalArgumentException("CPF já cadastrado");
+        }
+
+        Usuarios usuario = new Usuarios();
+        usuario.setNome(dto.getNome());
+        usuario.setEmail(dto.getEmail());
+        usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
+        usuario.setCpf(dto.getCpf());
+        usuario.setTelefone(dto.getTelefone());
+        usuario.setTipo(TipoUsuario.CLIENTE);
+        usuario.setAtivo(true);
+        usuario.setDataCriacao(LocalDateTime.now());
+
+        Usuarios saved = repository.save(usuario);
+        return mapToResponseDTO(saved);
+    }
 
 
     @Transactional
@@ -148,23 +176,6 @@ public class UsuarioService {
         }
         repository.deleteById(id);
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     private UsuarioResponseDTO mapToResponseDTO(Usuarios usuario) {
         UsuarioResponseDTO dto = new UsuarioResponseDTO();
