@@ -177,6 +177,7 @@ public class UsuarioService {
         repository.deleteById(id);
     }
 
+
     private UsuarioResponseDTO mapToResponseDTO(Usuarios usuario) {
         UsuarioResponseDTO dto = new UsuarioResponseDTO();
         dto.setId(usuario.getId());

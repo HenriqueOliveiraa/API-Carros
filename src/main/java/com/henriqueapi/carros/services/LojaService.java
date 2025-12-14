@@ -92,7 +92,6 @@ public class LojaService {
         dto.setEstado(loja.getEstado());
         dto.setTelefone(loja.getTelefone());
 
-        // Conta quantidade de veículos da loja
         if (loja.getCarros() != null) {
             dto.setQuantidadeVeiculos(loja.getCarros().size());
         } else {
