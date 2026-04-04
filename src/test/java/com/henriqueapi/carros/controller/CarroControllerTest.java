@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.henriqueapi.carros.dtos.Request.CarroRequestDTO;
 import com.henriqueapi.carros.dtos.Response.CarroResponseDTO;
 import com.henriqueapi.carros.entity.enums.StatusVeiculo;
+import com.henriqueapi.carros.security.JwtService;
+import com.henriqueapi.carros.security.UserDetailsServiceImpl;
 import com.henriqueapi.carros.services.CarroService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,8 +14,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
-
-import java.math.BigDecimal;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
@@ -32,6 +32,12 @@ class CarroControllerTest {
 
     @MockBean
     private CarroService service;
+
+    @MockBean
+    private JwtService jwtService;
+
+    @MockBean
+    private UserDetailsServiceImpl userDetailsService;
 
     @Test
     @WithMockUser(roles = "GERENTE")
