@@ -1,0 +1,122 @@
+name: Spring Boot CI/CD
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  # Job 1: Build e Test
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout do código
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      # Configurar JDK
+      - name: Setup JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # Build com Maven
+      - name: Build com Maven
+        run: mvn clean install -DskipTests
+
+      # Executar testes
+      - name: Executar testes
+        run: mvn test
+
+      # Gerar relatório de cobertura
+      - name: Cobertura de código
+        run: mvn jacoco:report
+
+      # Upload do artifact (JAR)
+      - name: Upload JAR
+        uses: actions/upload-artifact@v3
+        with:
+          name: spring-boot-app
+          path: target/*.jar
+
+      # Análise de código com SonarCloud (opcional)
+      - name: SonarCloud Scan
+        if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn sonar:sonar
+
+  # Job 2: Build Docker Image
+  docker-build:
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v3
+
+      - name: Download JAR artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: spring-boot-app
+          path: target/
+
+      # Login no Docker Hub
+      - name: Login Docker Hub
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # Build e Push da imagem
+      - name: Build e Push Docker
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/spring-app:latest
+            ${{ secrets.DOCKER_USERNAME }}/spring-app:${{ github.sha }}
+
+  # Job 3: Deploy (AWS, Heroku, ou servidor)
+  deploy:
+    needs: docker-build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy para produção
+        run: |
+          echo "Iniciando deploy..."
+          # Adicione aqui seus comandos de deploy
+          # Exemplos abaixo:
+
+      # OPÇÃO A: Deploy via SSH
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /app
+            docker-compose pull
+            docker-compose up -d
+
+    # OPÇÃO B: Deploy para AWS Elastic Beanstalk
+    # - name: Deploy to AWS EB
+    #   uses: einaregilsson/beanstalk-deploy@v21
+    #   with:
+    #     aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+    #     aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+    #     application_name: spring-app
+    #     environment_name: spring-app-env
+    #     version_label: ${{ github.sha }}
+    #     region: us-east-1
+    #     deployment_package: target/app.jar
