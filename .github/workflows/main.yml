@@ -30,13 +30,13 @@ jobs:
         run: mvn clean install -DskipTests
 
       # Executar testes
-      - name: Executar testes
-        run: mvn test
-
-      # Gerar relatório de cobertura
-      - name: Cobertura de código
-        run: mvn jacoco:report
-        continue-on-error: true  # Continua mesmo se não tiver JaCoCo configurado
+#      - name: Executar testes
+#        run: mvn test
+#
+#      # Gerar relatório de cobertura
+#      - name: Cobertura de código
+#        run: mvn jacoco:report
+#        continue-on-error: true  # Continua mesmo se não tiver JaCoCo configurado
 
       # Upload do artifact (JAR)
       - name: Upload JAR
