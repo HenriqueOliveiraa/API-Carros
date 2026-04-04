@@ -1,79 +1,91 @@
 package com.henriqueapi.carros.controller;
 
-
 import com.henriqueapi.carros.dtos.Request.AlterarSenhaDTO;
 import com.henriqueapi.carros.dtos.Request.UsuarioRequestDTO;
 import com.henriqueapi.carros.dtos.Response.UsuarioResponseDTO;
 import com.henriqueapi.carros.entity.enums.TipoUsuario;
 import com.henriqueapi.carros.services.UsuarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/usuarios")
+@SecurityRequirement(name = "bearerAuth")
+@Tag(name = "Usuários", description = "Gestão de usuários")
 public class UsuarioController {
 
     @Autowired
     private UsuarioService service;
 
-
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UsuarioResponseDTO> create(@RequestBody UsuarioRequestDTO dto) {
-        UsuarioResponseDTO created = service.create(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @Operation(summary = "Cria novo usuário (apenas ADMIN)")
+    public ResponseEntity<UsuarioResponseDTO> create(@Valid @RequestBody UsuarioRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(service.create(dto));
     }
-
 
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<List<UsuarioResponseDTO>> listarTodos() {
-        List<UsuarioResponseDTO> usuarios = service.findAll();
-        return ResponseEntity.ok(usuarios);
+    @Operation(summary = "Lista todos os usuários com paginação")
+    public ResponseEntity<Page<UsuarioResponseDTO>> listarTodos(Pageable pageable) {
+        return ResponseEntity.ok(service.findAll(pageable));
     }
-
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @usuarioService.findById(#id).email == authentication.principal.username")
+    @PreAuthorize("hasRole('ADMIN') or @authorizationService.isOwner(#id, authentication)")
+    @Operation(summary = "Busca usuário por ID")
     public ResponseEntity<UsuarioResponseDTO> buscarPorId(@PathVariable Long id) {
-        UsuarioResponseDTO usuario = service.findById(id);
-        return ResponseEntity.ok(usuario);
+        return ResponseEntity.ok(service.findById(id));
     }
-
 
     @GetMapping("/tipo/{tipo}")
     @PreAuthorize("hasAnyRole('ADMIN', 'GERENTE')")
-    public ResponseEntity<List<UsuarioResponseDTO>> listarPorTipo(@PathVariable TipoUsuario tipo) {
-        List<UsuarioResponseDTO> usuarios = service.findByTipo(tipo);
-        return ResponseEntity.ok(usuarios);
+    @Operation(summary = "Lista usuários por tipo")
+    public ResponseEntity<Page<UsuarioResponseDTO>> listarPorTipo(
+            @PathVariable TipoUsuario tipo,
+            Pageable pageable) {
+        return ResponseEntity.ok(service.findByTipo(tipo, pageable));
     }
-
 
     @GetMapping("/loja/{lojaId}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('GERENTE') and @usuarioService.findById(authentication.principal.id).lojaId == #lojaId)")
-    public ResponseEntity<List<UsuarioResponseDTO>> listarPorLoja(@PathVariable Long lojaId) {
-        List<UsuarioResponseDTO> usuarios = service.findByLoja(lojaId);
-        return ResponseEntity.ok(usuarios);
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('GERENTE') and @authorizationService.isFromLoja(#lojaId, authentication))")
+    @Operation(summary = "Lista usuários de uma loja")
+    public ResponseEntity<Page<UsuarioResponseDTO>> listarPorLoja(
+            @PathVariable Long lojaId,
+            Pageable pageable) {
+        return ResponseEntity.ok(service.findByLoja(lojaId, pageable));
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Retorna dados do usuário logado")
+    public ResponseEntity<UsuarioResponseDTO> meuPerfil(@AuthenticationPrincipal UserDetails userDetails) {
+        return ResponseEntity.ok(service.findByEmail(userDetails.getUsername()));
+    }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN') or @usuarioService.findById(#id).email == authentication.principal.username")
+    @PreAuthorize("hasRole('ADMIN') or @authorizationService.isOwner(#id, authentication)")
+    @Operation(summary = "Atualiza dados do usuário")
     public ResponseEntity<UsuarioResponseDTO> atualizar(
             @PathVariable Long id,
-            @RequestBody UsuarioRequestDTO dto) {
-        UsuarioResponseDTO updated = service.update(id, dto);
-        return ResponseEntity.ok(updated);
+            @Valid @RequestBody UsuarioRequestDTO dto) {
+        return ResponseEntity.ok(service.update(id, dto));
     }
-
 
     @PatchMapping("/{id}/ativo")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Ativa ou desativa usuário")
     public ResponseEntity<Void> ativarDesativar(
             @PathVariable Long id,
             @RequestParam Boolean ativo) {
@@ -81,22 +93,21 @@ public class UsuarioController {
         return ResponseEntity.noContent().build();
     }
 
-
     @PatchMapping("/{id}/senha")
-    @PreAuthorize("@usuarioService.findById(#id).email == authentication.principal.username")
+    @PreAuthorize("hasRole('ADMIN') or @authorizationService.isOwner(#id, authentication)")
+    @Operation(summary = "Altera senha do usuário")
     public ResponseEntity<Void> alterarSenha(
             @PathVariable Long id,
-            @RequestBody AlterarSenhaDTO dto) {
+            @Valid @RequestBody AlterarSenhaDTO dto) {
         service.alterarSenha(id, dto);
         return ResponseEntity.noContent().build();
     }
 
-
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
+    @Operation(summary = "Remove usuário")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.delete(id);
         return ResponseEntity.noContent().build();
     }
-
 }

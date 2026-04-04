@@ -7,17 +7,18 @@ import com.henriqueapi.carros.dtos.Response.UsuarioResponseDTO;
 import com.henriqueapi.carros.entity.Lojas;
 import com.henriqueapi.carros.entity.Usuarios;
 import com.henriqueapi.carros.entity.enums.TipoUsuario;
+import com.henriqueapi.carros.exception.BusinessException;
+import com.henriqueapi.carros.exception.ResourceNotFoundException;
 import com.henriqueapi.carros.repository.LojaRepository;
 import com.henriqueapi.carros.repository.UsuarioRepository;
-import jakarta.persistence.EntityNotFoundException;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class UsuarioService {
@@ -31,15 +32,13 @@ public class UsuarioService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-
     @Transactional
     public UsuarioResponseDTO registrar(RegistroRequestDTO dto) {
-
         if (repository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Email já cadastrado");
+            throw new BusinessException("Email já cadastrado");
         }
-        if (repository.existsByCpf(dto.getCpf())) {
-            throw new IllegalArgumentException("CPF já cadastrado");
+        if (dto.getCpf() != null && repository.existsByCpf(dto.getCpf())) {
+            throw new BusinessException("CPF já cadastrado");
         }
 
         Usuarios usuario = new Usuarios();
@@ -52,29 +51,23 @@ public class UsuarioService {
         usuario.setAtivo(true);
         usuario.setDataCriacao(LocalDateTime.now());
 
-        Usuarios saved = repository.save(usuario);
-        return mapToResponseDTO(saved);
+        return mapToResponseDTO(repository.save(usuario));
     }
 
-
     @Transactional
-    public UsuarioResponseDTO create(UsuarioRequestDTO dto){
-
-        if(repository.existsByEmail(dto.getEmail())){
-            throw new IllegalArgumentException("Email já cadastrado");
+    public UsuarioResponseDTO create(UsuarioRequestDTO dto) {
+        if (repository.existsByEmail(dto.getEmail())) {
+            throw new BusinessException("Email já cadastrado");
         }
-
-        if (repository.existsByCpf(dto.getCpf())) {
-            throw new IllegalArgumentException("CPF já cadastrado");
+        if (dto.getCpf() != null && repository.existsByCpf(dto.getCpf())) {
+            throw new BusinessException("CPF já cadastrado");
         }
-
         if ((dto.getTipo() == TipoUsuario.VENDEDOR || dto.getTipo() == TipoUsuario.GERENTE)
                 && dto.getLojaId() == null) {
-            throw new IllegalArgumentException("Vendedores e Gerentes precisam estar vinculados a uma loja");
+            throw new BusinessException("Vendedores e Gerentes precisam estar vinculados a uma loja");
         }
 
         Usuarios usuario = new Usuarios();
-
         usuario.setNome(dto.getNome());
         usuario.setEmail(dto.getEmail());
         usuario.setSenha(passwordEncoder.encode(dto.getSenha()));
@@ -86,24 +79,20 @@ public class UsuarioService {
 
         if (dto.getLojaId() != null) {
             Lojas loja = lojaRepository.findById(dto.getLojaId())
-                    .orElseThrow(() -> new EntityNotFoundException("Loja não encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Loja não encontrada"));
             usuario.setLoja(loja);
         }
 
-        Usuarios saved = repository.save(usuario);
-        return mapToResponseDTO(saved);
-
+        return mapToResponseDTO(repository.save(usuario));
     }
-
 
     @Transactional
     public UsuarioResponseDTO update(Long id, UsuarioRequestDTO dto) {
         Usuarios usuario = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
-
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
         if (!usuario.getEmail().equals(dto.getEmail()) && repository.existsByEmail(dto.getEmail())) {
-            throw new IllegalArgumentException("Email já cadastrado");
+            throw new BusinessException("Email já cadastrado");
         }
 
         usuario.setNome(dto.getNome());
@@ -113,55 +102,53 @@ public class UsuarioService {
 
         if (dto.getLojaId() != null) {
             Lojas loja = lojaRepository.findById(dto.getLojaId())
-                    .orElseThrow(() -> new EntityNotFoundException("Loja não encontrada"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Loja não encontrada"));
             usuario.setLoja(loja);
         }
 
-        Usuarios updated = repository.save(usuario);
-        return mapToResponseDTO(updated);
+        return mapToResponseDTO(repository.save(usuario));
     }
 
-
-    public UsuarioResponseDTO findById(Long id){
-        Usuarios usuario = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado") );
-        return mapToResponseDTO(usuario);
-    }
-
-    public List<UsuarioResponseDTO> findAll() {
-        return repository.findAll().stream()
+    public UsuarioResponseDTO findById(Long id) {
+        return repository.findById(id)
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
     }
 
-    public List<UsuarioResponseDTO> findByTipo(TipoUsuario tipo) {
-        return repository.findByTipo(tipo).stream()
+    public UsuarioResponseDTO findByEmail(String email) {
+        return repository.findByEmail(email)
                 .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
     }
 
-    public List<UsuarioResponseDTO> findByLoja(Long lojaId) {
-        return repository.findByLojaId(lojaId).stream()
-                .map(this::mapToResponseDTO)
-                .collect(Collectors.toList());
+    public Page<UsuarioResponseDTO> findAll(Pageable pageable) {
+        return repository.findAll(pageable).map(this::mapToResponseDTO);
+    }
+
+    public Page<UsuarioResponseDTO> findByTipo(TipoUsuario tipo, Pageable pageable) {
+        return repository.findByTipo(tipo, pageable).map(this::mapToResponseDTO);
+    }
+
+    public Page<UsuarioResponseDTO> findByLoja(Long lojaId, Pageable pageable) {
+        return repository.findByLojaId(lojaId, pageable).map(this::mapToResponseDTO);
     }
 
     @Transactional
     public void ativarDesativar(Long id, Boolean ativo) {
         Usuarios usuario = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
         usuario.setAtivo(ativo);
         usuario.setDataAtualizacao(LocalDateTime.now());
         repository.save(usuario);
     }
 
     @Transactional
-    public void alterarSenha(Long id, AlterarSenhaDTO dto){
+    public void alterarSenha(Long id, AlterarSenhaDTO dto) {
         Usuarios usuario = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado"));
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado"));
 
-        if (!passwordEncoder.matches(dto.getSenhaAtual(), usuario.getSenha())){
-            throw new IllegalArgumentException("Senha atual incorreta");
+        if (!passwordEncoder.matches(dto.getSenhaAtual(), usuario.getSenha())) {
+            throw new BusinessException("Senha atual incorreta");
         }
 
         usuario.setSenha(passwordEncoder.encode(dto.getNovaSenha()));
@@ -172,11 +159,10 @@ public class UsuarioService {
     @Transactional
     public void delete(Long id) {
         if (!repository.existsById(id)) {
-            throw new EntityNotFoundException("Usuário não encontrado");
+            throw new ResourceNotFoundException("Usuário não encontrado");
         }
         repository.deleteById(id);
     }
-
 
     private UsuarioResponseDTO mapToResponseDTO(Usuarios usuario) {
         UsuarioResponseDTO dto = new UsuarioResponseDTO();
@@ -188,12 +174,10 @@ public class UsuarioService {
         dto.setTipo(usuario.getTipo());
         dto.setAtivo(usuario.getAtivo());
         dto.setDataCriacao(usuario.getDataCriacao());
-
         if (usuario.getLoja() != null) {
             dto.setLojaId(usuario.getLoja().getId());
             dto.setLojaNome(usuario.getLoja().getNome());
         }
-
         return dto;
     }
 }

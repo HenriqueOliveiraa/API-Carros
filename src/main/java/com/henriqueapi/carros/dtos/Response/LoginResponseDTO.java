@@ -1,6 +1,5 @@
 package com.henriqueapi.carros.dtos.Response;
 
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.henriqueapi.carros.entity.enums.TipoUsuario;
 import lombok.Data;

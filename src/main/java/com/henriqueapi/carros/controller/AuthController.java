@@ -6,6 +6,9 @@ import com.henriqueapi.carros.dtos.Response.LoginResponseDTO;
 import com.henriqueapi.carros.dtos.Response.UsuarioResponseDTO;
 import com.henriqueapi.carros.services.AuthService;
 import com.henriqueapi.carros.services.UsuarioService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Autenticação", description = "Endpoints de login e registro")
 public class AuthController {
 
     @Autowired
@@ -25,15 +29,14 @@ public class AuthController {
     private UsuarioService usuarioService;
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO dto) {
-        LoginResponseDTO response = authService.login(dto);
-        return ResponseEntity.ok(response);
+    @Operation(summary = "Realiza login e retorna token JWT")
+    public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO dto) {
+        return ResponseEntity.ok(authService.login(dto));
     }
 
     @PostMapping("/registro")
-    public ResponseEntity<UsuarioResponseDTO> registrar(@RequestBody RegistroRequestDTO dto) {
-        UsuarioResponseDTO created = usuarioService.registrar(dto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    @Operation(summary = "Registra um novo cliente")
+    public ResponseEntity<UsuarioResponseDTO> registrar(@Valid @RequestBody RegistroRequestDTO dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.registrar(dto));
     }
-
 }

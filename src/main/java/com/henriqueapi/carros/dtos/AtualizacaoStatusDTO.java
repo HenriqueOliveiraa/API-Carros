@@ -8,4 +8,3 @@ public class AtualizacaoStatusDTO {
     private StatusVeiculo novoStatus;
     private String observacao;
 }
-

@@ -47,15 +47,10 @@ jobs:
 
       # Análise de código com SonarCloud (opcional)
       - name: SonarCloud Scan
-        if: github.event_name == 'push' && secrets.SONAR_TOKEN != ''
+        if: github.event_name == 'push'
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: |
-          mvn sonar:sonar \
-            -Dsonar.projectKey=HenriqueOliveiraa_API-Carros \
-            -Dsonar.organization=henriqueoliveiraa \
-            -Dsonar.host.url=https://sonarcloud.io \
-            -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+        run: mvn sonar:sonar -Dsonar.projectKey=HenriqueOliveiraa_API-Carros -Dsonar.organization=henriqueoliveiraa -Dsonar.host.url=https://sonarcloud.io -Dsonar.token=$SONAR_TOKEN
 
   # Job 2: Build Docker Image
   docker-build:

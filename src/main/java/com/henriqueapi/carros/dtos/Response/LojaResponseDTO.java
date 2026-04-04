@@ -1,7 +1,8 @@
 package com.henriqueapi.carros.dtos.Response;
 
-
 import lombok.Data;
+
+import java.time.LocalDateTime;
 
 @Data
 public class LojaResponseDTO {
@@ -13,5 +14,7 @@ public class LojaResponseDTO {
     private String cidade;
     private String estado;
     private String telefone;
+    private Boolean ativo;
     private Integer quantidadeVeiculos;
+    private LocalDateTime dataCriacao;
 }
