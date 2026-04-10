@@ -48,7 +48,7 @@ public class Usuarios {
     @Column(nullable = false)
     private Boolean ativo = true;
 
-    @Column(nullable = false, updatable = false)
+    @Column(updatable = false)
     private LocalDateTime dataCriacao = LocalDateTime.now();
 
     private LocalDateTime dataAtualizacao;
